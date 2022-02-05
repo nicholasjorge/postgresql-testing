@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: "jdbc:postgresql://${embedded.postgresql.host}:${embedded.postgresql.port}/${embedded.postgresql.schema}?reWriteBatchedStatements=true"
+    username: ${embedded.postgresql.user}
+    password: ${embedded.postgresql.password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      auto-commit: false
+      connection-test-query: SELECT 1
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        generate_statistics: true
+        jdbc.batch_size: 2
+#        order_inserts: true #in case of relationships
+#        order_updates: true #in case of relationships
+        cache.use_second_level_cache: false

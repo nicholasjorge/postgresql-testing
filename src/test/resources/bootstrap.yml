@@ -1,0 +1,7 @@
+embedded:
+    postgresql:
+#        enabled: true
+        dockerImage: postgres:14.1
+        database: dances
+        user: user
+        password: password
