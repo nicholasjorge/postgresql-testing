@@ -1,0 +1,77 @@
+image: docker:20.10.16
+
+# DinD service is required for Testcontainers
+services:
+  - name: docker:20.10.16-dind
+    # explicitly disable tls to avoid docker startup interruption
+    command: ["--tls=false"]
+
+variables:
+  # Instruct Testcontainers to use the daemon of DinD.
+  DOCKER_HOST: "tcp://docker:2375"
+  # Instruct Docker not to start over TLS.
+  DOCKER_TLS_CERTDIR: ""
+  # Improve performance with overlayfs.
+  DOCKER_DRIVER: overlay2
+  MAVEN_CLI_OPTS: "--batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+cache:
+  paths:
+    - .m2/repository
+    - target
+
+stages:         
+  - build
+  - test
+  - package
+  - deploy
+
+build-job:     
+  image: maven:3-eclipse-temurin-17-alpine 
+  stage: build
+  script:
+    - mvn $MAVEN_CLI_OPTS clean compile -DskipTests
+
+unit-tests-job:
+  image: maven:3-eclipse-temurin-17-alpine    
+  stage: test   
+  script:
+    - mvn $MAVEN_CLI_OPTS test
+  artifacts:
+    untracked: true
+    expire_in: 1 days
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+
+integration-tests-job: 
+  image: maven:3-eclipse-temurin-17-alpine  
+  stage: test    
+  script:
+    - mvn $MAVEN_CLI_OPTS verify
+  artifacts:
+    untracked: true
+    expire_in: 1 days
+    reports:
+      junit:
+        - target/failsafe-reports/TEST-*.xml
+
+package-job:
+  image: maven:3-eclipse-temurin-17-alpine
+  stage: package
+  script:
+    - mvn $MAVEN_CLI_OPTS clean package -DskipTests 
+  artifacts:
+    when: always
+    untracked: true
+    expire_in: 1 days
+    paths:
+      - target/*.jar
+
+deploy-job:      
+  stage: deploy 
+  environment: production
+  script:
+    - echo "Deploying application..."
+    - echo "Application successfully deployed."
